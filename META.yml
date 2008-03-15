@@ -1,0 +1,21 @@
+---
+name: Devel-TakeHashArgs
+version: 0.001
+author:
+  - 'Zoffix Znet <zoffix@cpan.org>'
+abstract: make a hash from @_ and set defaults in subs
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Exporter: 5.58
+build_requires:
+  Test::More: 0
+provides:
+  Devel::TakeHashArgs:
+    file: lib/Devel/TakeHashArgs.pm
+    version: 0.001
+generated_by: Module::Build version 0.2808
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
