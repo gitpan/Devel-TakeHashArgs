@@ -3,16 +3,14 @@ package Devel::TakeHashArgs;
 use warnings;
 use strict;
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 require Exporter;
 our @ISA = 'Exporter';
 our @EXPORT = qw(get_args_as_hash);
 
-use Carp;
-
 sub get_args_as_hash {
-    my ( $in_args, $out_args, $opts ) = @_;
+    my ( $in_args, $out_args, $opts, $mandatory_opts ) = @_;
 
     @$in_args & 1
         and $@ = "Must have even number of arguments"
@@ -20,6 +18,13 @@ sub get_args_as_hash {
 
     %$out_args = @$in_args;
     $out_args->{ +lc } = delete $out_args->{ $_ } for keys %$out_args;
+
+    for ( @$mandatory_opts ) {
+        unless ( exists $out_args->{$_} ) {
+            $@ = "Missing mandatory argument `$_`";
+            return 0;
+        }
+    }
 
     %$out_args = (
         %{ $opts || {} },
@@ -35,14 +40,14 @@ __END__
 
 =head1 NAME
 
-Devel::TakeHashArgs - make a hash from @_ and set defaults in subs
+Devel::TakeHashArgs - make a hash from @_ and set defaults in subs while checking that all mandatory arguments are present
 
 =head1 SYNOPSIS
 
     use Devel::TakeHashArgs;
     use Carp;
     sub foos {
-        get_args_as_hash(\@_, \my %args, { foos => 'bars' } )
+        get_args_as_hash(\@_, \my %args, { foos => 'bars' }, [ qw(ber1 ber2) ] )
             or croak $@;
 
         print map { "$_ => $args{$_}\n" } keys %args;
@@ -52,7 +57,8 @@ Devel::TakeHashArgs - make a hash from @_ and set defaults in subs
 
 The module is a short utility I made after being sick and tired of writing
 redundant code to make a hash out of args when they are passed as
-key/value pairs including setting their defaults.
+key/value pairs including setting their defaults and checking for mandatory
+arguments.
 
 =head1 EXPORT
 
@@ -61,22 +67,31 @@ The module has only one sub and it's exported by default.
 =head2 get_args_as_hash
 
     sub foos {
-        get_args_as_hash( \@_, \my %args, { some => 'defaults', more => 'defaults!' } )
+        get_args_as_hash( \@_, \my %args, {
+                some => 'defaults',
+                more => 'defaults2!',
+            },
+            [ qw(mandatory1 mandatory2) ],
+        )
             or croak $@;
     }
 
-The sub makes out a hash out of C<@_>, assigns optional defaults and fills
+The sub makes out a hash out of C<@_>, checks that all mandatory arguments
+were provided (if any), assigns optional defaults (if any) and fills
 the passed hashref. B<Returns> C<1> for success and C<0> for failure,
 upon failure the reason for it will be available in C<$@> variable...
-actually, the only reason it would fail is if C<@_> would contain uneven
-number of arguments.
 
 The sub takes two mandatory arguments: the reference to an array
-(the C<@_> but it can be any array), a reference to a hash where you want
-your args to go, and third optional hashref argument which would contain
+(the C<@_> but it can be any array) and a reference to a hash where you want
+your args to go. The other two optional arguments are a hashref
+which would contain
 the defaults to assign unless the argument is present in the passed array.
+Following the hashref is an arrayref of mandatory arguments. If you want
+to specify mandatory arguments without providing any defaults just pass in
+an empty hashref as a third argument, i.e.
+C<< get_args_as_hash( \@_, \ my %args, {}, [ qw(mandatory1 mandatory2) ]) >>
 
-Basically the above code is the same as:
+Basically the above code is roughly the same as:
 
     sub foos {
         croak "Must have even number of arguments to new()"
@@ -84,6 +99,11 @@ Basically the above code is the same as:
 
         my %args = @_;
         $args{ +lc } = delete $args{ $_ } for keys %args;
+
+        for ( qw(mandatory1 mandatory2) ) {
+            exists $args{$_}
+                or croak "Missing mandatory argument `$_`";
+        }
 
         %args = (
             some    => 'defaults',
@@ -95,6 +115,12 @@ Basically the above code is the same as:
 
 It's not much but you get pretty sick and tired after you type (copy/paste)
 that bit over 150 times.
+
+=head1 CAVEATS AND LIMITATIONS
+
+All argument names (the hash keys) will be lowercased therefore when setting
+defaults and mandatory arguments you can only use all lowercase names.
+On a plus side, user can use whatever case they want :)
 
 =head1 AUTHOR
 

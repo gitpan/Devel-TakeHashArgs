@@ -1,5 +1,8 @@
 Revision history for Devel-TakeHashArgs
 
+0.002   Mar 17, 2008
+        Added "mandatory arguments" support
+
 0.001   Mar 5, 2008
         First version, released on an unsuspecting world.
 

@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 11;
+use Test::More tests => 14;
 
 BEGIN {
     use_ok('Exporter');
@@ -41,3 +41,12 @@ is( $args->{foos}, 'beers', 'override is working' );
 $args={};
 is( get_args_as_hash([1], $args), 0, 'must fail with odd number of els');
 is ( $@, "Must have even number of arguments", '$@ must be set' );
+
+$args={};
+is( get_args_as_hash([1..2], $args, {}, ['a']), 0,
+        'must fail with missing mandatory arguments');
+is( $@, "Missing mandatory argument `a`", '$@ must be set approprietaly');
+
+$args={};
+is( get_args_as_hash([a => 'b'], $args, {}, ['a']), 1,
+        'must not fail, we supplied mandatory arguments');

@@ -1,9 +1,9 @@
 ---
 name: Devel-TakeHashArgs
-version: 0.001
+version: 0.002
 author:
   - 'Zoffix Znet <zoffix@cpan.org>'
-abstract: make a hash from @_ and set defaults in subs
+abstract: make a hash from @_ and set defaults in subs while checking that all mandatory arguments are present
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
@@ -14,7 +14,7 @@ build_requires:
 provides:
   Devel::TakeHashArgs:
     file: lib/Devel/TakeHashArgs.pm
-    version: 0.001
+    version: 0.002
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
