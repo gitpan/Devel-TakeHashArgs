@@ -1,5 +1,9 @@
 Revision history for Devel-TakeHashArgs
 
+0.003   Mar 23, 2008
+        Added checks for valid arguments
+        (the [qw(only these are valid args)] arrayref)
+
 0.002   Mar 17, 2008
         Added "mandatory arguments" support
 

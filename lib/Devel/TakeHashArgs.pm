@@ -3,21 +3,30 @@ package Devel::TakeHashArgs;
 use warnings;
 use strict;
 
-our $VERSION = '0.002';
+our $VERSION = '0.003';
 
 require Exporter;
 our @ISA = 'Exporter';
 our @EXPORT = qw(get_args_as_hash);
 
 sub get_args_as_hash {
-    my ( $in_args, $out_args, $opts, $mandatory_opts ) = @_;
+    my ( $in_args, $out_args, $opts, $mandatory_opts, $valid_opts ) = @_;
+
+    $valid_opts = []
+        unless defined $valid_opts;
 
     @$in_args & 1
-        and $@ = "Must have even number of arguments"
+        and $@ = "Must have correct number of arguments"
         and return 0;
 
     %$out_args = @$in_args;
     $out_args->{ +lc } = delete $out_args->{ $_ } for keys %$out_args;
+
+    %$out_args = (
+        %{ $opts || {} },
+
+        %$out_args,
+    );
 
     for ( @$mandatory_opts ) {
         unless ( exists $out_args->{$_} ) {
@@ -26,11 +35,16 @@ sub get_args_as_hash {
         }
     }
 
-    %$out_args = (
-        %{ $opts || {} },
-
-        %$out_args,
-    );
+    if ( @$valid_opts ) {
+        my %valid;
+        @valid{ @$valid_opts } = (1) x @$valid_opts;
+        for ( keys %$out_args ) {
+            unless ( $valid{$_} ) {
+                $@ = "Invalid argument `$_`";
+                return 0;
+            }
+        }
+    }
 
     1;
 }
@@ -47,7 +61,11 @@ Devel::TakeHashArgs - make a hash from @_ and set defaults in subs while checkin
     use Devel::TakeHashArgs;
     use Carp;
     sub foos {
-        get_args_as_hash(\@_, \my %args, { foos => 'bars' }, [ qw(ber1 ber2) ] )
+        get_args_as_hash( \@_, \ my %args,
+            { foos => 'bars' },     # these are optional with defaults
+            [ qw(ber1 ber2) ],      # these are mandatory
+            [ qw(ber1 ber2 foos) ], # only these args are valid ones
+        )
             or croak $@;
 
         print map { "$_ => $args{$_}\n" } keys %args;
@@ -72,6 +90,7 @@ The module has only one sub and it's exported by default.
                 more => 'defaults2!',
             },
             [ qw(mandatory1 mandatory2) ],
+            [ qw(only these are valid arguments) ],
         )
             or croak $@;
     }
@@ -83,38 +102,87 @@ upon failure the reason for it will be available in C<$@> variable...
 
 The sub takes two mandatory arguments: the reference to an array
 (the C<@_> but it can be any array) and a reference to a hash where you want
-your args to go. The other two optional arguments are a hashref
+your args to go. The other three optional arguments are a hashref
 which would contain
 the defaults to assign unless the argument is present in the passed array.
-Following the hashref is an arrayref of mandatory arguments. If you want
+Following the hashref is an arrayref of mandatory arguments. Following it
+is an arrayref which lists valid arguments. If you want
 to specify mandatory arguments without providing any defaults just pass in
 an empty hashref as a third argument, i.e.
 C<< get_args_as_hash( \@_, \ my %args, {}, [ qw(mandatory1 mandatory2) ]) >>
 
-Basically the above code is roughly the same as:
+Same goes for "no defaults" and "no mandatory" but "only these are valid"
+i.e.: C<< get_args_as_hash( \@_, \ my %args, {}, [], [ 'valid' ] ) >>
 
-    sub foos {
-        croak "Must have even number of arguments to new()"
-            if @_ & 1;
+=head1 EXAMPLES
 
-        my %args = @_;
-        $args{ +lc } = delete $args{ $_ } for keys %args;
+=head2 example 1
 
-        for ( qw(mandatory1 mandatory2) ) {
-            exists $args{$_}
-                or croak "Missing mandatory argument `$_`";
+    sub foo {
+        my $self = shift;
+        get_args_as_hash( \@_, \ my %args, { foos => 'bars' } )
+            or croak $@;
+
+        if ( $args{foos} eq 'bars' ) {
+            print "User did not specify anything for 'foos' argument\n";
         }
+        else {
+            print "User specified $args{foos} as value for 'foos'\n";
+        }
+    }
 
-        %args = (
-            some    => 'defaults',
-            more    => 'defaults!',
+This subroutine will first remove the object which foo() is a method of.
+Then it will stuff any key/value paired args into hash C<%args> and will
+set key C<foo> to value C<bars> unless user specified that argument.
 
-            %args,
-        );
-    );
+=head2 example 2
 
-It's not much but you get pretty sick and tired after you type (copy/paste)
-that bit over 150 times.
+    sub foo {
+        get_args_as_hash( \@_, \ my %args, {}, [ 'foos' ] )
+            or croak $@;
+
+        print "User specified $args{foos} as a mandatory argument\n";
+    }
+
+This subroutine will not set any default args but will make argument
+C<foos> a mandatory one and will eat the user if he/she won't specify
+that argument. Note: user may pass as many other arguments as he/she wants
+
+=head2 example 3
+
+    sub foo {
+        get_args_as_hash( \@_, \ my %args, {}, [], [ 'foos' ] )
+            or croak $@;
+
+        if ( keys %args ) {
+            print "User set `foos` to $args{foos} and that's the only argument\n";
+        }
+        else {
+            print "User chose not to set any arguments\n";
+        }
+    }
+
+This sub will not set any defaults and will not claim any arguments
+mandatory B<but> the only argument it will allow is argument named C<foos>
+(thus the assumption in the code that if C<%args> got any keys then it
+must be C<foos> and no others)
+
+=head2 example 4
+
+    sub foo {
+        get_args_as_hash( \@_, \ my %args,
+            { foos  => 'bars' },
+            [ qw(bar beer) ],
+            [ qw(foos bar beer) ],
+        ) or croak $@;
+    }
+
+This is full action: user may specify only C<foos>, C<bar> and C<beer>
+arguments, out of which C<bar> and C<beer> and mandatory and argument
+C<foos> will be set to value C<bars> if not specified. Note: setting
+mandatory argument arrayref to C<[ qw(foos bar beer) ]> would have
+the same effect, because we are setting default for C<foos> thus it will
+always be present no matter what.
 
 =head1 CAVEATS AND LIMITATIONS
 
