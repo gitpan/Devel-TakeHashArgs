@@ -3,11 +3,25 @@ package Devel::TakeHashArgs;
 use warnings;
 use strict;
 
-our $VERSION = '0.003';
+our $VERSION = '0.004';
 
 require Exporter;
 our @ISA = 'Exporter';
 our @EXPORT = qw(get_args_as_hash);
+our @EXPORT_OK = qw(set_self_args_as_hash);
+
+sub set_self_args_as_hash {
+    my ( $in_args, $opts, $mandatory_opts, $valid_opts ) = @_;
+    my $class = shift @$in_args;
+
+    get_args_as_hash(
+        $in_args, \ my %args, $opts, $mandatory_opts, $valid_opts
+    ) or return 0; # $@ will be set with an error;
+
+    my $self = bless {}, $class;
+
+    $self->$_( $args{ $_ } ) for keys %args;
+}
 
 sub get_args_as_hash {
     my ( $in_args, $out_args, $opts, $mandatory_opts, $valid_opts ) = @_;
@@ -78,11 +92,11 @@ redundant code to make a hash out of args when they are passed as
 key/value pairs including setting their defaults and checking for mandatory
 arguments.
 
-=head1 EXPORT
+=head1 EXPORT DEFAULT
 
 The module has only one sub and it's exported by default.
 
-=head2 get_args_as_hash
+=head2 C<get_args_as_hash>
 
     sub foos {
         get_args_as_hash( \@_, \my %args, {
@@ -113,6 +127,60 @@ C<< get_args_as_hash( \@_, \ my %args, {}, [ qw(mandatory1 mandatory2) ]) >>
 
 Same goes for "no defaults" and "no mandatory" but "only these are valid"
 i.e.: C<< get_args_as_hash( \@_, \ my %args, {}, [], [ 'valid' ] ) >>
+
+=head1 EXPORT OPTIONAL
+
+=head2 C<set_self_args_as_hash>
+
+    use Carp;
+    use Devel::TakeHashArgs 'set_self_args_as_hash';
+
+    sub new {
+        my $self = set_self_args_as_hash( \@_, {
+                default => 'value',
+            },
+            [ qw(these  are  mandatory) ],
+            [ qw(only  these  are  valid  arguments) ],
+    }
+
+This sub is not exported by default. It is to be used in constructors.
+The accepted arguments are the same as for C<get_args_as_hash> B<except>
+for the "missing" second argument - just skip the C<\ my %args>.
+
+Returns a blessed hashref with provieded arguments filled in using
+accessors/mutators. In other words the following two snippets are
+equivalent.
+
+    # using get_args_as_hash()
+
+    use Devel::TakeHashArgs;
+    sub new {
+        my $class = shift;
+        get_args_as_hash( \@_, \ my %args, {
+                optional => 'value',
+            },
+            [ 'mandatory' ],
+            [ qw(optional mandatory) ],
+        ) or croak $@;
+
+        my $self = bless {}, $class;
+        $self->$_( $args{ $_ } ) for keys %args;
+        return $self;
+    }
+
+    # ...is the same as...
+
+    use Devel::TakeHashArgs 'set_self_args_as_hash';
+    sub new {
+        my $self = set_self_args_as_hash( \@_, {
+                optional => 'value',
+            },
+            [ 'mandatory' ],
+            [ qw(optional mandatory) ],
+        ) or croak $@;
+
+        return $self;
+    }
 
 =head1 EXAMPLES
 

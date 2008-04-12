@@ -1,5 +1,8 @@
 Revision history for Devel-TakeHashArgs
 
+0.004   Apr 11, 2008
+        Added set_self_args_as_hash()
+
 0.003   Mar 23, 2008
         Added checks for valid arguments
         (the [qw(only these are valid args)] arrayref)
