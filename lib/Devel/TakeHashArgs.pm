@@ -3,7 +3,7 @@ package Devel::TakeHashArgs;
 use warnings;
 use strict;
 
-our $VERSION = '0.004';
+our $VERSION = '0.005';
 
 require Exporter;
 our @ISA = 'Exporter';
@@ -21,6 +21,8 @@ sub set_self_args_as_hash {
     my $self = bless {}, $class;
 
     $self->$_( $args{ $_ } ) for keys %args;
+
+    return $self;
 }
 
 sub get_args_as_hash {

@@ -1,5 +1,8 @@
 Revision history for Devel-TakeHashArgs
 
+0.005   Apr 12, 2008
+        fixed a stupid bug in set_self_args_as_hash()
+
 0.004   Apr 11, 2008
         Added set_self_args_as_hash()
 
