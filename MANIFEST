@@ -2,11 +2,13 @@ Build.PL
 Changes
 MANIFEST
 README
+LICENSE
 lib/Devel/TakeHashArgs.pm
 t/00-load.t
-t/pod-coverage.t
-t/pod.t
-t/kwalitee.t
+xt/pod-coverage.t
+xt/pod.t
+xt/kwalitee.t
 examples/sample.pl
 Makefile.PL
 META.yml
+META.json

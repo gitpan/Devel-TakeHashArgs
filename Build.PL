@@ -12,9 +12,13 @@ my $builder = Module::Build->new(
     },
     requires => {
         'Exporter' => 5.58,
+        'perl' => '5.006',
     },
+    configure_requires => { 'Module::Build' => 0 },
     add_to_cleanup      => [ 'Devel-TakeHashArgs-*' ],
     create_makefile_pl => 'traditional',
 );
-
+if ( $ENV{RELEASE_TESTING} ) {
+    system('pod2text lib/Devel/TakeHashArgs.pm > README');
+}
 $builder->create_build_script();

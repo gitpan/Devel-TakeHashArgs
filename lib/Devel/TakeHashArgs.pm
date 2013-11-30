@@ -3,7 +3,7 @@ package Devel::TakeHashArgs;
 use warnings;
 use strict;
 
-our $VERSION = '0.005';
+our $VERSION = '0.006';
 
 require Exporter;
 our @ISA = 'Exporter';
@@ -67,6 +67,8 @@ sub get_args_as_hash {
 
 1;
 __END__
+
+=encoding utf8
 
 =head1 NAME
 
